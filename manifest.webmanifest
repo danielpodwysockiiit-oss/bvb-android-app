@@ -1,0 +1,8 @@
+{
+  "name": "BVB Schwarzgelb",
+  "short_name": "BVB",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#101010",
+  "theme_color": "#f7d417"
+}
