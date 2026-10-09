@@ -24,14 +24,18 @@ text.textContent = online
 window.addEventListener("online", loadData);
 window.addEventListener("offline", status);
 
+
 function safeText(value) {
-return String(value ?? "").replace(/[&<>"']/g, char => ({
-"&": "&",
-"<": "<",
-">": ">",
-'"': """,
-"'": "'"
-})[char]);
+  return String(value ?? "").replace(/[&<>"']/g, function(char) {
+    const replacements = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    };
+    return replacements[char];
+  });
 }
 
 function dateTime(value) {
