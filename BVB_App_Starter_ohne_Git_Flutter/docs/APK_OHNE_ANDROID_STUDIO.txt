@@ -1,0 +1,12 @@
+APK OHNE ANDROID STUDIO
+
+Dies ist ein Browser-Prototyp, noch keine native Android-App. Android Studio als IDE ist optional,
+aber eine Android-Build-Toolchain wird für eine lokal gebaute APK benötigt.
+
+Wenn du weder Git noch Flutter installieren willst, ist ein Cloud-Build möglich, z.B. über einen
+Build-Dienst oder GitHub Actions. Dafür muss der Quellcode dort bereitgestellt und ein Build-Workflow
+eingerichtet werden; das ist nicht mit einem einfachen ZIP allein erledigt.
+
+Für echte Bundesliga-Tabelle, nächste Partie und Resultate muss eine verlässliche Fußball-API
+verbunden werden. Dieses Projekt zeigt bewusst Platzhalter statt erfundener Live-Daten.
+Die Offline-Funktion kann erst echte Daten zwischenspeichern, nachdem eine Datenquelle angebunden ist.

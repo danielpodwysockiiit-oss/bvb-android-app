@@ -1,0 +1,1 @@
+@echo off\nstart "" "%~dp0index.html"\n
