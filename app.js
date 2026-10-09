@@ -25,19 +25,21 @@ window.addEventListener("online", loadData);
 window.addEventListener("offline", status);
 
 
+
 function safeText(value) {
-  return String(value ?? "").replace(/[&<>"']/g, function(char) {
-    const replacements = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    };
-    return replacements[char];
+  const text = String(value ?? "");
+  const replacements = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  };
+
+  return text.replace(/[&<>"']/g, function (character) {
+    return replacements[character];
   });
 }
-
 function dateTime(value) {
 if (!value) return "Termin noch nicht bekannt";
 return new Date(value).toLocaleString("de-DE", {
