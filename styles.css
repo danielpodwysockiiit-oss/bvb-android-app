@@ -398,3 +398,56 @@ footer a { margin-left: 8px; }
   .panel { padding: 15px; }
   .standings-table { min-width: 690px; }
 }
+
+/* Vereinslogos: feste Größe erzwingen */
+.table-wrap img,
+#tableBody img,
+.club-cell img,
+img.club-logo {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  object-fit: contain !important;
+  flex: 0 0 18px !important;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Vereinsname und Logo in der Tabelle */
+.club-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.club-cell img {
+  flex-shrink: 0 !important;
+}
+
+/* Logos beim nächsten Spiel */
+.match img,
+.match .team img,
+.team-mark img {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  object-fit: contain !important;
+  flex: 0 0 24px !important;
+}
+
+/* Verhindert, dass Bilder ihren Bereich vergrößern */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.match .team,
+.team-mark {
+  min-width: 0;
+}
