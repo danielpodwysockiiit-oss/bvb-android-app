@@ -1,9 +1,10 @@
 {
-  "short_name": "BVB App",
-  "name": "Borussia Dortmund Fan App",
-  "icons": [],
-  "start_url": ".",
-  "background_color": "#121212",
-  "theme_color": "#FDE100",
-  "display": "standalone"
+  "name": "BVB Schwarzgelb",
+  "short_name": "BVB",
+  "lang": "de-DE",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#101010",
+  "theme_color": "#f7d417",
+  "description": "Fan-App mit BVB-Tabelle, Spielplan und Ergebnissen."
 }
