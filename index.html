@@ -1,7 +1,158 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7d417"><title>BVB – Schwarzgelb</title><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"></head><body>
-<header class="top"><div class="brand"><div class="crest">BVB<br><small>09</small></div><div><div class="eyebrow">SCHWARZGELB</div><h1>Borussia Dortmund</h1></div></div><span class="season">SAISON 2026/27</span></header>
-<main><section class="hero"><p class="eyebrow">IMMER AUF DEM LAUFENDEN</p><h2>Ein Verein.<br><span>Eine Liebe.</span></h2><p class="muted">Tabelle, Spielplan und Ergebnisse an einem Ort.</p></section>
-<section class="grid"><article class="panel"><div class="panel-head"><h2>Bundesliga</h2><span class="tag">TABELLE</span></div><div id="tableStatus" class="notice">Live-Daten noch nicht verbunden</div><div class="table-wrap"><table><thead><tr><th>#</th><th>Verein</th><th>Sp.</th><th>Pkt.</th></tr></thead><tbody id="tableBody"><tr><td>—</td><td>Bitte Datenquelle verbinden</td><td>—</td><td>—</td></tr></tbody></table></div><p class="footnote">Es werden keine erfundenen Tabellenwerte angezeigt.</p></article>
-<article class="panel"><div class="panel-head"><h2>Nächstes Spiel</h2><span class="tag">SPIELPLAN</span></div><div class="match"><div class="team"><div class="team-mark bvb">BVB</div><b>Borussia Dortmund</b></div><div class="vs">VS</div><div class="team"><div class="team-mark opp">?</div><b>Gegner offen</b></div></div><div class="match-meta"><span>📅 Datum folgt mit Datenquelle</span><span>🕒 Anstoßzeit folgt</span></div><div class="notice">Noch keine Spielplan-API konfiguriert.</div></article>
-<article class="panel"><div class="panel-head"><h2>Letzte Ergebnisse</h2><span class="tag">ERGEBNISSE</span></div><div id="results" class="results"><div class="result-row"><span>Vergangene Spiele</span><b>— : —</b><span>Keine Daten geladen</span></div></div></article>
-<article class="panel"><div class="panel-head"><h2>Offline-Modus</h2><span class="tag">CACHE</span></div><p>Zuletzt geladene Daten können lokal gespeichert werden, damit sie ohne Internet weiterhin verfügbar sind.</p><div id="connection" class="connection"><i></i><span>Prüfe Verbindung …</span></div><button id="refreshBtn">Daten erneut laden</button></article></section></main><footer>Fan-Projekt · Nicht offiziell mit Borussia Dortmund verbunden.</footer><script src="app.js"></script></body></html>
+
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7d417">
+  <meta name="description" content="Die BVB-Fan-App: Bundesliga-Tabelle, Spielplan, Ergebnisse und aktuelle Informationen rund um Borussia Dortmund.">
+  <title>BVB – Schwarzgelb</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="crest">BVB<br><small>09</small></div>
+      <div>
+        <div class="eyebrow">SCHWARZGELB</div>
+        <h1>Borussia Dortmund</h1>
+      </div>
+    </div>
+    <span class="season">SAISON 2026/27</span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">IMMER AUF DEM LAUFENDEN</p>
+      <h2>Ein Verein.<br><span>Eine Liebe.</span></h2>
+      <p class="muted">Tabelle, Spielplan und Ergebnisse an einem Ort.</p>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Bundesliga</h2>
+          <span class="tag">TABELLE</span>
+        </div>
+        <div id="tableStatus" class="notice">Live-Daten werden geladen …</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Verein</th>
+                <th>Sp.</th>
+                <th>Pkt.</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr>
+                <td>—</td>
+                <td>Tabelle wird geladen …</td>
+                <td>—</td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="footnote">Es werden keine erfundenen Tabellenwerte angezeigt.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Nächstes Spiel</h2>
+          <span class="tag">SPIELPLAN</span>
+        </div>
+        <div class="match">
+          <div class="team">
+            <div class="team-mark bvb">BVB</div>
+            <b>Borussia Dortmund</b>
+          </div>
+          <div class="vs">VS</div>
+          <div class="team">
+            <div class="team-mark opp">?</div>
+            <b>Gegner offen</b>
+          </div>
+        </div>
+        <div class="match-meta">
+          <span>📅 Datum folgt mit Datenquelle</span>
+          <span>🕒 Anstoßzeit folgt</span>
+        </div>
+        <div class="notice">Spieldaten werden geladen, sofern die Datenquelle verfügbar ist.</div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Letzte Ergebnisse</h2>
+          <span class="tag">ERGEBNISSE</span>
+        </div>
+        <div id="results" class="results">
+          <div class="result-row">
+            <span>Vergangene Spiele</span>
+            <b>— : —</b>
+            <span>Ergebnisse werden geladen …</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Offline-Modus</h2>
+          <span class="tag">CACHE</span>
+        </div>
+        <p>Zuletzt geladene Daten können lokal gespeichert werden, damit sie ohne Internet weiterhin verfügbar sind.</p>
+        <div id="connection" class="connection">
+          <i></i>
+          <span>Prüfe Verbindung …</span>
+        </div>
+        <button id="refreshBtn" type="button">Daten erneut laden</button>
+      </article>
+    </section>
+
+    <!-- Kontaktbereich: ganz unten auf der Seite -->
+    <section class="contact panel" id="kontakt">
+      <div class="panel-head">
+        <h2>Kontakt &amp; Support</h2>
+        <span class="tag">KONTAKT</span>
+      </div>
+
+      <p>Du hast Fragen, möchtest einen Fehler melden oder hast Ideen zur Verbesserung der App? Schreib uns gerne eine E-Mail.</p>
+
+      <div class="contact-details">
+        <div class="contact-item">
+          <span class="contact-label">Ersteller</span>
+          <strong>Daniel Podwysocki</strong>
+        </div>
+
+        <div class="contact-item">
+          <span class="contact-label">E-Mail</span>
+          <a href="mailto:noreply.bvbfanpage.apps@gmail.com">
+            noreply.bvbfanpage.apps@gmail.com
+          </a>
+        </div>
+
+        <div class="contact-item">
+          <span class="contact-label">Erreichbarkeit</span>
+          <strong>Montag–Freitag, 16:00–20:00 Uhr</strong>
+        </div>
+      </div>
+
+      <a class="contact-button" href="mailto:noreply.bvbfanpage.apps@gmail.com">
+        ✉ E-Mail schreiben
+      </a>
+
+      <p class="contact-note">
+        Dies ist ein unabhängiges Fan-Projekt und steht nicht in offizieller Verbindung mit Borussia Dortmund.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    Fan-Projekt · Nicht offiziell mit Borussia Dortmund verbunden.
+    <a href="#kontakt">Kontakt</a>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
