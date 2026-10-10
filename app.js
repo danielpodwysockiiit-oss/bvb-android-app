@@ -28,7 +28,7 @@ function dateTime(value) {
   }).format(date) + " Uhr";
 }
 
-/* Vereinslogos: Tabelle immer exakt 22 × 22 Pixel */
+/* Tabellenlogos: kompakte, feste Größe von 18 × 18 Pixeln */
 function teamLogo(team) {
   const name = teamName(team);
   const abbreviation = (team?.tla || name.slice(0, 3)).toUpperCase();
@@ -38,15 +38,15 @@ function teamLogo(team) {
     return `<span class="club-fallback" title="${esc(name)}">${esc(abbreviation)}</span>`;
   }
 
-  return `<span style="display:inline-flex;width:22px;height:22px;min-width:22px;max-width:22px;flex:0 0 22px;align-items:center;justify-content:center;overflow:hidden">
+  return `<span style="display:inline-flex;width:18px;height:18px;min-width:18px;max-width:18px;flex:0 0 18px;align-items:center;justify-content:center;overflow:hidden">
     <img
       src="${esc(crest)}"
       alt="${esc(name)}"
       title="${esc(name)}"
-      width="22"
-      height="22"
+      width="18"
+      height="18"
       loading="lazy"
-      style="display:block!important;width:22px!important;height:22px!important;min-width:22px!important;max-width:22px!important;min-height:22px!important;max-height:22px!important;object-fit:contain!important;padding:0!important;margin:0!important;flex:none!important"
+      style="display:block!important;width:18px!important;height:18px!important;min-width:18px!important;max-width:18px!important;min-height:18px!important;max-height:18px!important;object-fit:contain!important;padding:0!important;margin:0!important;flex:none!important"
       onerror="this.style.display='none';this.parentElement.nextElementSibling.style.display='inline-flex'"
     >
   </span><span class="club-fallback" style="display:none">${esc(abbreviation)}</span>`;
@@ -305,7 +305,7 @@ function renderMain(liveData, upcomingData, finishedData) {
       <div class="team">
         <div class="team-mark ${team.id === 4 ? "bvb" : "opp"}">
           ${team.crest
-            ? `<img src="${esc(team.crest)}" alt="${esc(teamName(team))}" style="width:36px;height:36px;max-width:36px;max-height:36px;object-fit:contain" onerror="this.style.display='none';this.parentElement.textContent='${esc(team.tla || side)}'">`
+            ? `<img src="${esc(team.crest)}" alt="${esc(teamName(team))}" style="width:26px;height:26px;max-width:26px;max-height:26px;object-fit:contain" onerror="this.style.display='none';this.parentElement.textContent='${esc(team.tla || side)}'">`
             : esc(team.tla || side)}
         </div>
         <b>${esc(teamName(team))}</b>
