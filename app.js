@@ -1,6 +1,6 @@
 
 const API_BASE = "https://bvb-football-api.danielpodwysockiiit.workers.dev";
-const CACHE_KEY = "bvb-app-data-v3";
+const CACHE_KEY = "bvb-app-data-v4";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -15,7 +15,6 @@ const esc = (value) =>
 
 const dateTime = (value) => {
   if (!value) return "Termin noch nicht bekannt";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Termin noch nicht bekannt";
 
@@ -26,22 +25,48 @@ const dateTime = (value) => {
   }).format(date) + " Uhr";
 };
 
-const teamName = (team) =>
-  team?.shortName || team?.name || "Unbekannt";
+const teamName = (team) => team?.shortName || team?.name || "Unbekannt";
 
 let countdownTarget = null;
-let countdownTimer = null;
 let latestStandings = null;
 
 function setConnection(ok, text) {
   const element = $("#connection");
-  if (!element) return;
-
-  element.innerHTML = `
-    <i></i>
-    <span>${esc(text || (
+  if (element) {
+    element.innerHTML = `<i></i><span>${esc(text || (
       ok ? "Online – Daten aktualisiert" : "Offline – gespeicherte Daten"
-    ))}</span>
+    ))}</span>`;
+  }
+}
+
+/* Vereinslogo aus der API */
+function teamLogo(team) {
+  const name = teamName(team);
+  const crest = team?.crest;
+
+  if (!crest) {
+    return `<span class="club-fallback">${esc(name)}</span>`;
+  }
+
+  return `
+    <img
+      src="${esc(crest)}"
+      alt="${esc(name)}"
+      title="${esc(name)}"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+      style="width:30px;height:30px;object-fit:contain;flex-shrink:0"
+      onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'club-fallback',textContent:this.alt}))"
+    >
+  `;
+}
+
+function teamCell(team) {
+  return `
+    <div style="display:flex;align-items:center;gap:9px;min-width:0">
+      ${teamLogo(team)}
+      <span>${esc(teamName(team))}</span>
+    </div>
   `;
 }
 
@@ -82,21 +107,17 @@ function ensureExtraTableUI() {
   `;
 
   const footnote = panel.querySelector(".footnote");
-  if (footnote) footnote.insertAdjacentElement("afterend", container);
-  else panel.appendChild(container);
+  if (footnote) {
+    footnote.insertAdjacentElement("afterend", container);
+  } else {
+    panel.appendChild(container);
+  }
 
-  $("#tableSelector").addEventListener("change", () => {
-    renderSelectedTable();
-  });
+  $("#tableSelector").addEventListener("change", renderSelectedTable);
 }
 
 function getStandingsTable(data, type) {
   const tables = data?.standings || [];
-
-  if (type === "FIRST_HALF" || type === "SECOND_HALF") {
-    return tables.find((table) => table.type === type) || null;
-  }
-
   return tables.find((table) => table.type === type) || null;
 }
 
@@ -120,7 +141,7 @@ function renderTable(data) {
       ? rows.map((row) => `
           <tr class="${row.team?.id === 4 ? "bvb-row" : ""}">
             <td>${esc(row.position)}</td>
-            <td>${esc(row.team?.shortName || row.team?.name)}</td>
+            <td>${teamCell(row.team)}</td>
             <td>${esc(row.playedGames)}</td>
             <td><b>${esc(row.points)}</b></td>
           </tr>
@@ -143,22 +164,18 @@ function renderSelectedTable() {
   const rows = table?.table || [];
 
   if (!rows.length) {
-    body.innerHTML = `
-      <tr><td colspan="9">Für diese Ansicht liefert die aktuelle API keine Tabelle.</td></tr>
-    `;
-
+    body.innerHTML = `<tr><td colspan="9">Für diese Ansicht liefert die API keine Tabelle.</td></tr>`;
     note.textContent =
       type === "FIRST_HALF" || type === "SECOND_HALF"
-        ? "Hin- und Rückrundentabellen sind in der aktuellen Datenquelle nicht verfügbar. Es werden keine Werte erfunden."
+        ? "Diese Teilrundentabelle wird von der aktuellen Datenquelle möglicherweise nicht angeboten."
         : "Diese Tabelle ist derzeit nicht verfügbar.";
-
     return;
   }
 
   note.textContent = {
     TOTAL: "Gesamttabelle",
-    HOME: "Nur Ergebnisse aus Heimspielen",
-    AWAY: "Nur Ergebnisse aus Auswärtsspielen",
+    HOME: "Nur Heimspiele",
+    AWAY: "Nur Auswärtsspiele",
     FIRST_HALF: "Hinrundentabelle",
     SECOND_HALF: "Rückrundentabelle"
   }[type] || "Tabellendaten";
@@ -166,7 +183,7 @@ function renderSelectedTable() {
   body.innerHTML = rows.map((row) => `
     <tr class="${row.team?.id === 4 ? "bvb-row" : ""}">
       <td>${esc(row.position)}</td>
-      <td>${esc(row.team?.shortName || row.team?.name)}</td>
+      <td>${teamCell(row.team)}</td>
       <td>${esc(row.playedGames)}</td>
       <td>${esc(row.won)}</td>
       <td>${esc(row.draw)}</td>
@@ -183,15 +200,13 @@ function scorerText(match) {
     .filter((goal) => goal.scorer?.name)
     .map((goal) => {
       const minute = goal.minute ? `${goal.minute}′ ` : "";
-      const scorer = goal.scorer.name;
-
       const team = goal.team?.id === match.homeTeam?.id
         ? " (Heim)"
         : goal.team?.id === match.awayTeam?.id
           ? " (Auswärts)"
           : "";
 
-      return `${minute}${scorer}${team}`;
+      return `${minute}${goal.scorer.name}${team}`;
     });
 
   return goals.length
@@ -205,29 +220,14 @@ function ensureCountdown() {
 
   const countdown = document.createElement("div");
   countdown.id = "matchCountdown";
-  countdown.style.cssText = `
-    margin-top:18px;
-    padding:16px;
-    border-radius:12px;
-    background:#202020;
-    border:1px solid #f7d417;
-    text-align:center;
-  `;
+  countdown.style.cssText =
+    "margin-top:18px;padding:16px;border-radius:12px;background:#202020;border:1px solid #f7d417;text-align:center";
 
   countdown.innerHTML = `
     <div style="font-weight:bold;color:#f7d417;margin-bottom:12px">
       COUNTDOWN BIS ZUM ANPFIFF
     </div>
-    <div id="countdownValues" style="
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:8px;
-    ">
-      <div><strong>--</strong><small style="display:block">Tage</small></div>
-      <div><strong>--</strong><small style="display:block">Stunden</small></div>
-      <div><strong>--</strong><small style="display:block">Minuten</small></div>
-      <div><strong>--</strong><small style="display:block">Sekunden</small></div>
-    </div>
+    <div id="countdownValues" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px"></div>
     <div id="countdownMessage" style="margin-top:10px;font-size:13px">
       Warte auf den Spieltermin …
     </div>
@@ -243,7 +243,6 @@ function setCountdown(match, isLive) {
 
   const values = $("#countdownValues");
   const message = $("#countdownMessage");
-
   if (!values || !message) return;
 
   if (isLive) {
@@ -262,17 +261,10 @@ function setCountdown(match, isLive) {
 
   const target = match?.utcDate ? new Date(match.utcDate).getTime() : NaN;
 
-  if (!Number.isFinite(target)) {
+  if (!Number.isFinite(target) || target <= Date.now()) {
     countdownTarget = null;
     values.innerHTML = "";
     message.textContent = "Der Anstoßtermin ist noch nicht bekannt.";
-    return;
-  }
-
-  if (target <= Date.now()) {
-    countdownTarget = null;
-    values.innerHTML = "";
-    message.textContent = "Der geplante Anstoßzeitpunkt ist erreicht.";
     return;
   }
 
@@ -283,34 +275,29 @@ function setCountdown(match, isLive) {
 function updateCountdown() {
   const values = $("#countdownValues");
   const message = $("#countdownMessage");
-
   if (!values || !message || !countdownTarget) return;
 
-  let remaining = Math.max(0, countdownTarget - Date.now());
+  let remaining = countdownTarget - Date.now();
 
   if (remaining <= 0) {
     values.innerHTML = "";
-    message.textContent = "Anstoßzeit erreicht! Lade den aktuellen Spielstand …";
+    message.textContent = "Anstoßzeit erreicht! Aktualisiere die Spieldaten …";
     return;
   }
 
   const days = Math.floor(remaining / 86400000);
   remaining %= 86400000;
-
   const hours = Math.floor(remaining / 3600000);
   remaining %= 3600000;
-
   const minutes = Math.floor(remaining / 60000);
   const seconds = Math.floor((remaining % 60000) / 1000);
 
-  const units = [
+  values.innerHTML = [
     [days, "Tage"],
     [hours, "Stunden"],
     [minutes, "Minuten"],
     [seconds, "Sekunden"]
-  ];
-
-  values.innerHTML = units.map(([value, label]) => `
+  ].map(([value, label]) => `
     <div>
       <strong style="display:block;font-size:clamp(20px,4vw,30px);color:#f7d417">
         ${String(value).padStart(2, "0")}
@@ -333,18 +320,12 @@ function renderResults(data) {
   element.innerHTML = matches.length
     ? matches.map((match) => `
         <div class="result-row">
-          <span>${esc(teamName(match.homeTeam))} – ${esc(teamName(match.awayTeam))}</span>
+          <span>${teamCell(match.homeTeam)} – ${teamCell(match.awayTeam)}</span>
           <b>${match.score?.fullTime?.home ?? "—"} : ${match.score?.fullTime?.away ?? "—"}</b>
           <span>${esc(scorerText(match))}</span>
         </div>
       `).join("")
-    : `
-        <div class="result-row">
-          <span>Letzte Spiele</span>
-          <b>— : —</b>
-          <span>Keine Ergebnisdaten verfügbar</span>
-        </div>
-      `;
+    : `<div class="result-row"><span>Letzte Spiele</span><b>— : —</b><span>Keine Ergebnisdaten verfügbar</span></div>`;
 }
 
 function renderMain(liveData, upcomingData, finishedData) {
@@ -353,7 +334,7 @@ function renderMain(liveData, upcomingData, finishedData) {
   );
 
   const upcoming = (upcomingData?.matches || [])
-    .filter((match) => match.status === "SCHEDULED" || match.status === "TIMED")
+    .filter((match) => ["SCHEDULED", "TIMED"].includes(match.status))
     .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))[0];
 
   const recent = (finishedData?.matches || [])
@@ -362,7 +343,6 @@ function renderMain(liveData, upcomingData, finishedData) {
 
   const matchData = live || upcoming || recent;
   const panel = document.querySelector(".panel:nth-child(2)");
-
   if (!panel) return;
 
   ensureCountdown();
@@ -385,18 +365,16 @@ function renderMain(liveData, upcomingData, finishedData) {
     matchElement.innerHTML = `
       <div class="team">
         <div class="team-mark ${home.id === 4 ? "bvb" : "opp"}">
-          ${esc(home.tla || (home.id === 4 ? "BVB" : "?"))}
+          ${home.crest ? teamLogo(home) : esc(home.tla || (home.id === 4 ? "BVB" : "?"))}
         </div>
         <b>${esc(teamName(home))}</b>
       </div>
-      <div class="vs">
-        ${isLive
-          ? `${matchData.score?.fullTime?.home ?? 0} : ${matchData.score?.fullTime?.away ?? 0}`
-          : "VS"}
-      </div>
+      <div class="vs">${isLive
+        ? `${matchData.score?.fullTime?.home ?? 0} : ${matchData.score?.fullTime?.away ?? 0}`
+        : "VS"}</div>
       <div class="team">
         <div class="team-mark ${away.id === 4 ? "bvb" : "opp"}">
-          ${esc(away.tla || (away.id === 4 ? "BVB" : "?"))}
+          ${away.crest ? teamLogo(away) : esc(away.tla || (away.id === 4 ? "BVB" : "?"))}
         </div>
         <b>${esc(teamName(away))}</b>
       </div>
@@ -459,7 +437,7 @@ async function loadData() {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(data));
     } catch (error) {
-      console.warn("Lokaler Cache konnte nicht gespeichert werden:", error);
+      console.warn("Cache konnte nicht gespeichert werden:", error);
     }
 
     renderTable(standings);
@@ -484,7 +462,7 @@ async function loadData() {
         return;
       }
     } catch (cacheError) {
-      console.warn("Gespeicherte Daten konnten nicht gelesen werden:", cacheError);
+      console.warn("Cache konnte nicht gelesen werden:", cacheError);
     }
 
     setConnection(false, "Keine Verbindung zur Datenquelle");
@@ -501,10 +479,7 @@ async function loadData() {
 }
 
 const refreshButton = $("#refreshBtn");
-
-if (refreshButton) {
-  refreshButton.addEventListener("click", loadData);
-}
+if (refreshButton) refreshButton.addEventListener("click", loadData);
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("./service-worker.js").catch((error) => {
@@ -512,8 +487,6 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   });
 }
 
-if (countdownTimer) clearInterval(countdownTimer);
-countdownTimer = setInterval(updateCountdown, 1000);
-
+setInterval(updateCountdown, 1000);
 loadData();
 setInterval(loadData, 60000);
