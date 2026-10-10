@@ -1,377 +1,495 @@
 
 const API_BASE = "https://bvb-football-api.danielpodwysockiiit.workers.dev";
-const CACHE_KEY = "bvb-app-data-v6";
 
 const $ = (selector) => document.querySelector(selector);
 
-const esc = (value) =>
-  String(value ?? "").replace(/[&<>"']/g, (char) => ({
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
     "'": "&#39;"
   })[char]);
-
-const teamName = (team) => team?.shortName || team?.name || "Unbekannt";
-
-function dateTime(value) {
-  if (!value) return "Termin noch nicht bekannt";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Termin noch nicht bekannt";
-
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Europe/Berlin"
-  }).format(date) + " Uhr";
 }
 
-/* Tabellenlogos: kompakte, feste Größe von 18 × 18 Pixeln */
-function teamLogo(team) {
-  const name = teamName(team);
-  const abbreviation = (team?.tla || name.slice(0, 3)).toUpperCase();
-  const crest = team?.crest;
+function teamName(team) {
+  if (!team) return "Unbekanntes Team";
+  if (typeof team === "string") return team;
 
-  if (!crest) {
-    return `<span class="club-fallback" title="${esc(name)}">${esc(abbreviation)}</span>`;
+  return (
+    team.name ||
+    team.shortName ||
+    team.short_name ||
+    team.tla ||
+    "Unbekanntes Team"
+  );
+}
+
+function dateTime(value) {
+  if (!value) return "Termin offen";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
   }
 
-  return `<span style="display:inline-flex;width:18px;height:18px;min-width:18px;max-width:18px;flex:0 0 18px;align-items:center;justify-content:center;overflow:hidden">
+  return new Intl.DateTimeFormat("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function teamLogo(team) {
+  const logo =
+    typeof team === "object" && team
+      ? team.crest || team.logo || team.image || ""
+      : "";
+
+  if (!logo) {
+    return `<span class="team-logo-placeholder" aria-hidden="true">⚽</span>`;
+  }
+
+  return `
     <img
-      src="${esc(crest)}"
-      alt="${esc(name)}"
-      title="${esc(name)}"
+      src="${esc(logo)}"
+      alt=""
       width="18"
       height="18"
       loading="lazy"
-      style="display:block!important;width:18px!important;height:18px!important;min-width:18px!important;max-width:18px!important;min-height:18px!important;max-height:18px!important;object-fit:contain!important;padding:0!important;margin:0!important;flex:none!important"
-      onerror="this.style.display='none';this.parentElement.nextElementSibling.style.display='inline-flex'"
+      style="width:18px;height:18px;object-fit:contain;flex-shrink:0"
+      onerror="this.style.display='none'"
     >
-  </span><span class="club-fallback" style="display:none">${esc(abbreviation)}</span>`;
+  `;
 }
 
 function teamCell(team) {
-  return `<div class="club-cell" style="display:flex;align-items:center;gap:7px;min-width:145px">
-    ${teamLogo(team)}
-    <span>${esc(teamName(team))}</span>
-  </div>`;
+  return `
+    <span class="team-cell">
+      ${teamLogo(team)}
+      <span>${esc(teamName(team))}</span>
+    </span>
+  `;
 }
 
-function setConnection(ok, message) {
-  const element = $("#connection");
+function setStatus(message, isError = false) {
+  const status = $("#tableStatus");
 
-  if (element) {
-    element.innerHTML = `<i></i><span>${esc(
-      message || (ok ? "Online – Daten aktualisiert" : "Offline – gespeicherte Daten")
-    )}</span>`;
-  }
-}
+  if (!status) return;
 
-let standingsData = null;
-let countdownTarget = null;
-
-function getTable(type) {
-  const tables = standingsData?.standings || [];
-  return tables.find((table) => table.type === type) || null;
+  status.textContent = message;
+  status.classList.toggle("error", isError);
 }
 
 function renderTable(data) {
-  standingsData = data;
-
-  const selector = $("#tableSelector");
-  const status = $("#tableStatus");
-
-  if (selector) {
-    selector.onchange = renderSelectedTable;
-  }
-
-  renderSelectedTable();
-
-  const total = getTable("TOTAL") || data?.standings?.[0];
-
-  if (status) {
-    status.textContent = total?.table?.length
-      ? "Bundesliga-Tabelle · aktuelle API-Daten"
-      : "Tabelle derzeit nicht verfügbar";
-  }
-}
-
-function renderSelectedTable() {
-  const type = $("#tableSelector")?.value || "TOTAL";
   const body = $("#tableBody");
-  const note = $("#tableNote");
 
   if (!body) return;
 
-  const rows = getTable(type)?.table || [];
+  const table = Array.isArray(data)
+    ? data
+    : data?.standings?.[0]?.table ||
+      data?.table ||
+      data?.standings ||
+      [];
 
-  if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="9">Für diese Tabellenansicht sind derzeit keine Daten verfügbar.</td></tr>`;
-
-    if (note) {
-      note.textContent = "Diese Ansicht wird möglicherweise nicht von der Datenquelle bereitgestellt.";
-    }
+  if (!Array.isArray(table) || table.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="9">Keine Tabellenstände verfügbar.</td>
+      </tr>
+    `;
     return;
   }
 
-  if (note) {
-    note.textContent = {
-      TOTAL: "Gesamttabelle · Spiele, Tore und Punkte",
-      HOME: "Heimtabelle · nur Heimspiele",
-      AWAY: "Auswärtstabelle · nur Auswärtsspiele",
-      FIRST_HALF: "Hinrundentabelle · sofern verfügbar",
-      SECOND_HALF: "Rückrundentabelle · sofern verfügbar"
-    }[type] || "Tabellendaten aus der API";
-  }
+  body.innerHTML = table.map((row, index) => {
+    const position = row.position ?? index + 1;
+    const team = row.team || row;
+    const played = row.playedGames ?? row.played ?? 0;
+    const won = row.won ?? 0;
+    const drawn = row.draw ?? row.drawn ?? 0;
+    const lost = row.lost ?? 0;
+    const goalsFor = row.goalsFor ?? row.goals_for ?? 0;
+    const goalsAgainst = row.goalsAgainst ?? row.goals_against ?? 0;
+    const goalDifference =
+      row.goalDifference ??
+      row.goal_difference ??
+      goalsFor - goalsAgainst;
+    const points = row.points ?? 0;
 
-  body.innerHTML = rows.map((row) => {
-    const team = row.team || {};
-    const goalsFor = row.goalsFor;
-    const goalsAgainst = row.goalsAgainst;
+    const isBvb =
+      /borussia dortmund|dortmund/i.test(teamName(team));
 
-    const difference = row.goalDifference ??
-      (goalsFor != null && goalsAgainst != null
-        ? Number(goalsFor) - Number(goalsAgainst)
-        : "—");
-
-    return `<tr class="${team.id === 4 ? "bvb-row" : ""}">
-      <td>${esc(row.position ?? "—")}</td>
-      <td>${teamCell(team)}</td>
-      <td>${esc(row.playedGames ?? "—")}</td>
-      <td>${esc(row.won ?? "—")}</td>
-      <td>${esc(row.draw ?? "—")}</td>
-      <td>${esc(row.lost ?? "—")}</td>
-      <td>${goalsFor == null || goalsAgainst == null
-        ? "—"
-        : `${esc(goalsFor)}:${esc(goalsAgainst)}`}</td>
-      <td>${esc(difference)}</td>
-      <td><b>${esc(row.points ?? "—")}</b></td>
-    </tr>`;
+    return `
+      <tr class="${isBvb ? "bvb-row" : ""}">
+        <td>${esc(position)}</td>
+        <td class="team-column">${teamCell(team)}</td>
+        <td>${esc(played)}</td>
+        <td>${esc(won)}</td>
+        <td>${esc(drawn)}</td>
+        <td>${esc(lost)}</td>
+        <td>${esc(goalsFor)}:${esc(goalsAgainst)}</td>
+        <td>${goalDifference > 0 ? "+" : ""}${esc(goalDifference)}</td>
+        <td><strong>${esc(points)}</strong></td>
+      </tr>
+    `;
   }).join("");
 }
 
-function scorerText(match) {
-  const goals = (match?.goals || [])
-    .filter((goal) => goal.scorer?.name)
-    .map((goal) => {
-      const minute = goal.minute ? `${goal.minute}′ ` : "";
-      const side = goal.team?.id === match.homeTeam?.id
-        ? " (Heim)"
-        : goal.team?.id === match.awayTeam?.id
-          ? " (Auswärts)"
-          : "";
-
-      return `${minute}${goal.scorer.name}${side}`;
-    });
-
-  return goals.length
-    ? goals.join(" · ")
-    : "Torschützen derzeit nicht verfügbar";
+function renderSelectedTable(data) {
+  renderTable(data);
 }
 
-function ensureCountdown() {
-  const panel = document.querySelector(".panel:nth-child(2)");
+function scorerText(match) {
+  const scorers = match?.scorers || match?.goals || [];
 
-  if (!panel || $("#matchCountdown")) return;
-
-  const box = document.createElement("div");
-  box.id = "matchCountdown";
-  box.innerHTML = `
-    <strong style="display:block;color:#f7d417;margin-bottom:12px">
-      COUNTDOWN BIS ZUM ANPFIFF
-    </strong>
-    <div id="countdownValues"></div>
-    <div id="countdownMessage" style="margin-top:10px;font-size:13px">
-      Warte auf den Spieltermin …
-    </div>
-  `;
-
-  const meta = panel.querySelector(".match-meta");
-
-  if (meta) {
-    meta.insertAdjacentElement("afterend", box);
-  } else {
-    panel.appendChild(box);
+  if (!Array.isArray(scorers) || scorers.length === 0) {
+    return "";
   }
+
+  return scorers.map((goal) => {
+    const player =
+      goal.scorer?.name ||
+      goal.player?.name ||
+      goal.name ||
+      "";
+
+    const minute =
+      goal.minute != null
+        ? `${goal.minute}'`
+        : "";
+
+    return [player, minute].filter(Boolean).join(" ");
+  }).filter(Boolean).join(", ");
+}
+
+let countdownInterval = null;
+let countdownTarget = null;
+
+function ensureCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+
+  countdownInterval = setInterval(updateCountdown, 1000);
+  updateCountdown();
 }
 
 function updateCountdown() {
-  const values = $("#countdownValues");
-  const message = $("#countdownMessage");
+  const element = $("#countdown");
 
-  if (!values || !message || !countdownTarget) return;
+  if (!element || !countdownTarget) return;
 
-  let remaining = countdownTarget - Date.now();
+  const difference = countdownTarget.getTime() - Date.now();
 
-  if (remaining <= 0) {
-    values.innerHTML = "";
-    message.textContent = "Anstoßzeit erreicht – Spielstand wird aktualisiert.";
+  if (difference <= 0) {
+    element.textContent = "Das Spiel läuft oder hat begonnen!";
     return;
   }
 
-  const days = Math.floor(remaining / 86400000);
-  remaining %= 86400000;
+  const totalSeconds = Math.floor(difference / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-  const hours = Math.floor(remaining / 3600000);
-  remaining %= 3600000;
-
-  const minutes = Math.floor(remaining / 60000);
-  const seconds = Math.floor((remaining % 60000) / 1000);
-
-  values.innerHTML = [
-    [days, "Tage"],
-    [hours, "Stunden"],
-    [minutes, "Minuten"],
-    [seconds, "Sekunden"]
-  ].map(([number, label]) => `
-    <div>
-      <strong class="countdown-number">${String(number).padStart(2, "0")}</strong>
-      <small>${label}</small>
-    </div>
-  `).join("");
+  element.textContent =
+    `${days} Tage ${hours} Std. ${minutes} Min. ${seconds} Sek.`;
 }
 
-function setCountdown(match, isLive) {
-  ensureCountdown();
+function setCountdown(match) {
+  const element = $("#countdown");
 
-  const values = $("#countdownValues");
-  const message = $("#countdownMessage");
+  if (!element) return;
 
-  if (!values || !message) return;
+  const dateValue =
+    match?.utcDate ||
+    match?.date ||
+    match?.kickoff ||
+    match?.utc_date;
 
-  if (isLive) {
+  if (!dateValue) {
     countdownTarget = null;
-    values.innerHTML = "";
-    message.textContent = "Das Spiel läuft live! 🟡⚫";
+    element.textContent = "Termin noch nicht bekannt";
     return;
   }
 
-  const target = match?.utcDate
-    ? new Date(match.utcDate).getTime()
-    : NaN;
+  const date = new Date(dateValue);
 
-  if (match?.status === "FINISHED") {
+  if (Number.isNaN(date.getTime())) {
     countdownTarget = null;
-    values.innerHTML = "";
-    message.textContent = "Dieses Spiel ist beendet.";
-  } else if (!Number.isFinite(target) || target <= Date.now()) {
-    countdownTarget = null;
-    values.innerHTML = "";
-    message.textContent = "Der Anstoßtermin ist noch nicht bekannt.";
-  } else {
-    countdownTarget = target;
-    updateCountdown();
+    element.textContent = "Termin noch nicht bekannt";
+    return;
   }
+
+  countdownTarget = date;
+  updateCountdown();
+}
+
+function matchTeam(match, side) {
+  const team = match?.[side];
+
+  if (team) return team;
+
+  const alternative =
+    side === "homeTeam"
+      ? match?.home_team
+      : match?.away_team;
+
+  return alternative || {};
+}
+
+function matchScore(match) {
+  const score = match?.score;
+
+  if (typeof score === "string") {
+    return score;
+  }
+
+  const fullTime = score?.fullTime || score?.full_time;
+
+  if (fullTime) {
+    const home = fullTime.home;
+    const away = fullTime.away;
+
+    if (home != null && away != null) {
+      return `${home} : ${away}`;
+    }
+  }
+
+  const homeScore =
+    match?.homeScore ??
+    match?.home_score ??
+    score?.home;
+
+  const awayScore =
+    match?.awayScore ??
+    match?.away_score ??
+    score?.away;
+
+  if (homeScore != null && awayScore != null) {
+    return `${homeScore} : ${awayScore}`;
+  }
+
+  return "vs";
+}
+
+function matchLogo(team) {
+  const logo =
+    typeof team === "object" && team
+      ? team.crest || team.logo || team.image || ""
+      : "";
+
+  if (!logo) return "";
+
+  return `
+    <img
+      src="${esc(logo)}"
+      alt=""
+      width="26"
+      height="26"
+      loading="lazy"
+      style="width:26px;height:26px;object-fit:contain"
+      onerror="this.style.display='none'"
+    >
+  `;
 }
 
 function renderMain(liveData, upcomingData, finishedData) {
-  const live = (liveData?.matches || []).find(
-    (match) => match.homeTeam?.id === 4 || match.awayTeam?.id === 4
-  );
+  const liveMatches = Array.isArray(liveData)
+    ? liveData
+    : liveData?.matches || [];
 
-  const upcoming = (upcomingData?.matches || [])
-    .filter((match) => ["SCHEDULED", "TIMED"].includes(match.status))
-    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))[0];
+  const upcomingMatches = Array.isArray(upcomingData)
+    ? upcomingData
+    : upcomingData?.matches || [];
 
-  const recent = (finishedData?.matches || [])
+  const finishedMatches = Array.isArray(finishedData)
+    ? finishedData
+    : finishedData?.matches || [];
+
+  const liveContainer = $("#liveMatches");
+  const nextContainer = $("#nextMatch");
+  const resultsContainer = $("#lastResults");
+
+  if (liveContainer) {
+    if (liveMatches.length > 0) {
+      liveContainer.innerHTML = liveMatches.map((match) => {
+        const home = matchTeam(match, "homeTeam");
+        const away = matchTeam(match, "awayTeam");
+
+        return `
+          <div class="match-card live-match">
+            <div class="match-teams">
+              <span>${matchLogo(home)} ${esc(teamName(home))}</span>
+              <strong>${esc(matchScore(match))}</strong>
+              <span>${matchLogo(away)} ${esc(teamName(away))}</span>
+            </div>
+            <div class="match-meta">LIVE</div>
+          </div>
+        `;
+      }).join("");
+    } else {
+      liveContainer.innerHTML = `
+        <p class="muted">Aktuell läuft kein Bundesliga-Spiel.</p>
+      `;
+    }
+  }
+
+  const nextMatch = upcomingMatches
     .slice()
-    .sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate))[0];
+    .sort((a, b) => {
+      const dateA = new Date(
+        a.utcDate || a.date || a.kickoff || a.utc_date || 0
+      ).getTime();
 
-  const matchData = live || upcoming || recent;
-  const panel = document.querySelector(".panel:nth-child(2)");
+      const dateB = new Date(
+        b.utcDate || b.date || b.kickoff || b.utc_date || 0
+      ).getTime();
 
-  if (!panel) return;
+      return dateA - dateB;
+    })
+    .find((match) => {
+      const status = String(match.status || "").toUpperCase();
 
-  ensureCountdown();
+      return (
+        status !== "FINISHED" &&
+        status !== "CANCELLED" &&
+        status !== "POSTPONED"
+      );
+    });
 
-  const matchElement = panel.querySelector(".match");
-  const meta = panel.querySelector(".match-meta");
-  const notice = panel.querySelector(".notice");
+  if (nextContainer) {
+    if (nextMatch) {
+      const home = matchTeam(nextMatch, "homeTeam");
+      const away = matchTeam(nextMatch, "awayTeam");
+      const competition =
+        nextMatch.competition?.name ||
+        nextMatch.competition ||
+        "Bundesliga";
 
-  if (!matchData) {
-    if (notice) notice.textContent = "Spielplan derzeit nicht verfügbar.";
-    setCountdown(null, false);
+      nextContainer.innerHTML = `
+        <div class="match-card next-match-card">
+          <p class="match-competition">${esc(
+            typeof competition === "string"
+              ? competition
+              : competition.name || "Bundesliga"
+          )}</p>
+
+          <div class="match-teams">
+            <span>${matchLogo(home)} ${esc(teamName(home))}</span>
+            <strong>vs.</strong>
+            <span>${matchLogo(away)} ${esc(teamName(away))}</span>
+          </div>
+
+          <p class="match-date">${esc(
+            dateTime(
+              nextMatch.utcDate ||
+              nextMatch.date ||
+              nextMatch.kickoff ||
+              nextMatch.utc_date
+            )
+          )}</p>
+
+          <div id="countdown" class="countdown">
+            Countdown wird geladen …
+          </div>
+        </div>
+      `;
+
+      setCountdown(nextMatch);
+    } else {
+      countdownTarget = null;
+      nextContainer.innerHTML = `
+        <p class="muted">Aktuell ist kein kommendes Spiel verfügbar.</p>
+      `;
+    }
+  }
+
+  if (resultsContainer) {
+    renderResults(finishedMatches, resultsContainer);
+  }
+}
+
+function renderResults(matches, container) {
+  if (!container) return;
+
+  const sortedMatches = matches
+    .slice()
+    .sort((a, b) => {
+      const dateA = new Date(
+        a.utcDate || a.date || a.kickoff || a.utc_date || 0
+      ).getTime();
+
+      const dateB = new Date(
+        b.utcDate || b.date || b.kickoff || b.utc_date || 0
+      ).getTime();
+
+      return dateB - dateA;
+    })
+    .slice(0, 5);
+
+  if (sortedMatches.length === 0) {
+    container.innerHTML = `
+      <p class="muted">Keine vergangenen Ergebnisse verfügbar.</p>
+    `;
     return;
   }
 
-  const home = matchData.homeTeam || {};
-  const away = matchData.awayTeam || {};
-  const isLive = Boolean(live);
+  container.innerHTML = sortedMatches.map((match) => {
+    const home = matchTeam(match, "homeTeam");
+    const away = matchTeam(match, "awayTeam");
 
-  if (matchElement) {
-    const matchTeam = (team, side) => `
-      <div class="team">
-        <div class="team-mark ${team.id === 4 ? "bvb" : "opp"}">
-          ${team.crest
-            ? `<img src="${esc(team.crest)}" alt="${esc(teamName(team))}" style="width:26px;height:26px;max-width:26px;max-height:26px;object-fit:contain" onerror="this.style.display='none';this.parentElement.textContent='${esc(team.tla || side)}'">`
-            : esc(team.tla || side)}
+    const scorers = scorerText(match);
+
+    return `
+      <div class="result-card">
+        <div class="result-teams">
+          <span>${matchLogo(home)} ${esc(teamName(home))}</span>
+          <strong>${esc(matchScore(match))}</strong>
+          <span>${matchLogo(away)} ${esc(teamName(away))}</span>
         </div>
-        <b>${esc(teamName(team))}</b>
-      </div>`;
 
-    matchElement.innerHTML = `
-      ${matchTeam(home, "HEIM")}
-      <div class="vs">${isLive
-        ? `${matchData.score?.fullTime?.home ?? 0} : ${matchData.score?.fullTime?.away ?? 0}`
-        : "VS"}</div>
-      ${matchTeam(away, "AUSW")}
+        <div class="result-date">
+          ${esc(dateTime(
+            match.utcDate ||
+            match.date ||
+            match.kickoff ||
+            match.utc_date
+          ))}
+        </div>
+
+        ${scorers
+          ? `<div class="result-scorers">${esc(scorers)}</div>`
+          : ""}
+      </div>
     `;
-  }
-
-  if (meta) {
-    meta.innerHTML = `
-      <span>📅 ${esc(dateTime(matchData.utcDate))}</span>
-      <span>🕒 ${isLive ? "LIVE" : esc(matchData.status === "FINISHED" ? "Abgepfiffen" : "Anstoß")}</span>
-    `;
-  }
-
-  if (notice) {
-    notice.innerHTML = isLive
-      ? `<b style="color:#f7d417">● LIVE</b><br>${esc(scorerText(matchData))}`
-      : matchData.status === "FINISHED"
-        ? `Letztes Spiel · ${esc(scorerText(matchData))}`
-        : "Nächstes geplantes BVB-Spiel";
-  }
-
-  setCountdown(matchData, isLive);
+  }).join("");
 }
 
-function renderResults(data) {
-  const element = $("#results");
-  if (!element) return;
-
-  const matches = (data?.matches || [])
-    .slice()
-    .sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate));
-
-  element.innerHTML = matches.length
-    ? matches.map((match) => `
-        <div class="result-row">
-          <span>${teamCell(match.homeTeam)} – ${teamCell(match.awayTeam)}</span>
-          <b>${match.score?.fullTime?.home ?? "—"} : ${match.score?.fullTime?.away ?? "—"}</b>
-          <span>${esc(scorerText(match))}</span>
-        </div>
-      `).join("")
-    : `<div class="result-row"><span>Letzte Spiele</span><b>— : —</b><span>Keine Ergebnisdaten verfügbar</span></div>`;
-}
-
-async function fetchJson(path) {
-  const response = await fetch(API_BASE + path, { cache: "no-store" });
-  const data = await response.json();
+async function fetchJson(endpoint) {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      Accept: "application/json"
+    }
+  });
 
   if (!response.ok) {
-    throw new Error(data.details || data.error || `HTTP ${response.status}`);
+    throw new Error(
+      `Fehler beim Laden von ${endpoint}: HTTP ${response.status}`
+    );
   }
 
-  return data;
+  return response.json();
 }
 
 async function loadData() {
-  const status = $("#tableStatus");
-
-  if (status) status.textContent = "Lade aktuelle Fußballdaten …";
+  setStatus("Aktuelle Fußballdaten werden geladen …");
 
   try {
     const [standings, live, upcoming, finished] = await Promise.all([
@@ -381,65 +499,22 @@ async function loadData() {
       fetchJson("/api/finished")
     ]);
 
-    const data = {
-      standings,
-      live,
-      upcoming,
-      finished,
-      savedAt: Date.now()
-    };
-
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.warn("Cache konnte nicht gespeichert werden:", error);
-    }
-
-    renderTable(standings);
+    renderSelectedTable(standings);
     renderMain(live, upcoming, finished);
-    renderResults(finished);
-    setConnection(true);
+
+    setStatus(
+      `Daten zuletzt aktualisiert: ${new Date().toLocaleTimeString("de-DE")}`
+    );
   } catch (error) {
-    console.error("BVB API:", error);
+    console.error("Fußballdaten konnten nicht geladen werden:", error);
 
-    try {
-      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
-
-      if (cached) {
-        renderTable(cached.standings);
-        renderMain(cached.live, cached.upcoming, cached.finished);
-        renderResults(cached.finished);
-        setConnection(false, "Offline – zuletzt gespeicherte Daten");
-
-        if (status) {
-          status.textContent = "Verbindungsfehler; gespeicherte Tabelle wird angezeigt.";
-        }
-        return;
-      }
-    } catch (cacheError) {
-      console.warn("Cache konnte nicht gelesen werden:", cacheError);
-    }
-
-    setConnection(false, "Keine Verbindung zur Datenquelle");
-
-    if (status) {
-      status.textContent = "Daten konnten nicht geladen werden. Bitte später erneut versuchen.";
-    }
+    setStatus(
+      "Daten konnten nicht geladen werden. Bitte später erneut versuchen.",
+      true
+    );
   }
 }
 
-const refreshButton = $("#refreshBtn");
-
-if (refreshButton) {
-  refreshButton.addEventListener("click", loadData);
-}
-
-if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-  navigator.serviceWorker.register("./service-worker.js").catch((error) => {
-    console.warn("Service Worker konnte nicht registriert werden:", error);
-  });
-}
-
-setInterval(updateCountdown, 1000);
+ensureCountdown();
 loadData();
 setInterval(loadData, 60000);
