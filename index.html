@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7d417">
-  <meta name="description" content="Die BVB-Fan-App: Bundesliga-Tabelle, Spielplan, Ergebnisse und aktuelle Informationen rund um Borussia Dortmund.">
+  <meta name="description" content="BVB-Fan-App mit Bundesliga-Tabelle, Spielplan, Live-Ergebnissen und Torschützen.">
   <title>BVB – Schwarzgelb</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
@@ -30,23 +30,44 @@
     </section>
 
     <section class="grid">
-      <article class="panel">
+      <article class="panel standings-panel">
         <div class="panel-head">
           <h2>Bundesliga</h2>
           <span class="tag">TABELLE</span>
         </div>
-        <div id="tableStatus" class="notice">Live-Daten werden geladen …</div>
+
+        <div id="tableStatus" class="notice">Lade aktuelle Tabellendaten …</div>
+
+        <label class="table-label" for="tableSelector">Tabellenansicht</label>
+        <select id="tableSelector">
+          <option value="TOTAL">Gesamttabelle</option>
+          <option value="HOME">Heimtabelle</option>
+          <option value="AWAY">Auswärtstabelle</option>
+          <option value="FIRST_HALF">Hinrundentabelle</option>
+          <option value="SECOND_HALF">Rückrundentabelle</option>
+        </select>
+
         <div class="table-wrap">
-          <table>
+          <table class="standings-table">
             <thead>
-              <tr><th>#</th><th>Verein</th><th>Sp.</th><th>Pkt.</th></tr>
+              <tr>
+                <th>#</th>
+                <th>Verein</th>
+                <th>Sp.</th>
+                <th>G</th>
+                <th>U</th>
+                <th>V</th>
+                <th>Tore</th>
+                <th>Diff.</th>
+                <th>Pkt.</th>
+              </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td>—</td><td>Tabelle wird geladen …</td><td>—</td><td>—</td></tr>
+              <tr><td colspan="9">Tabelle wird geladen …</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="footnote">Es werden keine erfundenen Tabellenwerte angezeigt.</p>
+        <p id="tableNote" class="footnote">Es werden keine Tabellenwerte erfunden.</p>
       </article>
 
       <article class="panel">
@@ -69,7 +90,7 @@
           <span>📅 Datum folgt mit Datenquelle</span>
           <span>🕒 Anstoßzeit folgt</span>
         </div>
-        <div class="notice">Spieldaten werden geladen, sofern die Datenquelle verfügbar ist.</div>
+        <div class="notice">Spieldaten werden geladen …</div>
       </article>
 
       <article class="panel">
@@ -91,7 +112,7 @@
           <h2>Offline-Modus</h2>
           <span class="tag">CACHE</span>
         </div>
-        <p>Zuletzt geladene Daten können lokal gespeichert werden, damit sie ohne Internet weiterhin verfügbar sind.</p>
+        <p>Zuletzt geladene Daten können gespeichert werden, damit sie bei fehlender Verbindung weiterhin verfügbar sind.</p>
         <div id="connection" class="connection">
           <i></i>
           <span>Prüfe Verbindung …</span>
@@ -105,28 +126,19 @@
         <h2>Kontakt &amp; Support</h2>
         <span class="tag">KONTAKT</span>
       </div>
-
       <p>Fragen, Hinweise oder Verbesserungsvorschläge? Schreib uns gerne eine E-Mail.</p>
-
       <div class="contact-details">
         <div class="contact-item">
           <span class="contact-label">Ersteller</span>
           <strong>Daniel P.</strong>
         </div>
-
         <div class="contact-item">
           <span class="contact-label">E-Mail</span>
           <a href="mailto:noreply.bvbfanpage.apps@gmail.com">noreply.bvbfanpage.apps@gmail.com</a>
         </div>
       </div>
-
-      <a class="contact-button" href="mailto:noreply.bvbfanpage.apps@gmail.com">
-        ✉ E-Mail schreiben
-      </a>
-
-      <p class="contact-note">
-        Dies ist ein unabhängiges Fan-Projekt und steht nicht in offizieller Verbindung mit Borussia Dortmund.
-      </p>
+      <a class="contact-button" href="mailto:noreply.bvbfanpage.apps@gmail.com">✉ E-Mail schreiben</a>
+      <p class="contact-note">Unabhängiges Fan-Projekt, nicht offiziell mit Borussia Dortmund verbunden.</p>
     </section>
   </main>
 
