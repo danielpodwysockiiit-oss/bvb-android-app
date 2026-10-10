@@ -205,26 +205,25 @@ tbody tr:hover {
   background: #39320c;
 }
 
-/* Vereinsnamen und Logos in der Tabelle */
-.club-cell {
+/* Vereinslogos und Teamnamen in der Tabelle */
+.club-cell,
+.team-cell {
   display: flex;
   align-items: center;
   gap: 7px;
   min-width: 0;
+}
+
+.club-cell {
   max-width: 220px;
 }
 
-.club-cell span:not(.club-fallback) {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-/* Alle Tabellenlogos auf 18 × 18 Pixel begrenzen */
-.table-wrap img,
-#tableBody img,
 .club-cell img,
-img.club-logo {
-  display: inline-block !important;
+.club-cell img.club-logo,
+img.club-logo,
+#tableBody img,
+.table-wrap img {
+  display: inline-block;
   width: 18px !important;
   height: 18px !important;
   min-width: 18px !important;
@@ -233,32 +232,30 @@ img.club-logo {
   max-height: 18px !important;
   object-fit: contain !important;
   flex: 0 0 18px !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  padding: 0;
   border: 0;
   background: transparent;
   vertical-align: middle;
 }
 
-.club-cell img {
-  flex-shrink: 0 !important;
+.club-cell span:not(.club-fallback),
+.team-cell span {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.club-fallback {
+.club-fallback,
+.team-logo-placeholder {
   display: inline-flex;
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  max-width: 18px;
-  min-height: 18px;
-  max-height: 18px;
-  flex: 0 0 18px;
   align-items: center;
   justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #333;
   color: var(--yellow);
-  font-size: .48rem;
+  font-size: .65rem;
   font-weight: 800;
   overflow: hidden;
 }
@@ -268,7 +265,7 @@ img.club-logo {
   color: #aaa;
 }
 
-/* Karte für das nächste Spiel */
+/* Spielkarte */
 .match {
   display: flex;
   align-items: center;
@@ -292,14 +289,10 @@ img.club-logo {
   overflow-wrap: anywhere;
 }
 
-/* Teamzeichen mit festem Rahmen */
 .team-mark {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  max-width: 44px;
-  min-height: 44px;
-  max-height: 44px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -313,12 +306,10 @@ img.club-logo {
   color: #111;
 }
 
-/* Logos in der Spielkarte auf 26 × 26 Pixel begrenzen */
-.match img,
-.match .team img,
 .team-mark img,
-.team-mark img.club-logo {
-  display: block !important;
+.team-mark img.club-logo,
+.match .team img {
+  display: block;
   width: 26px !important;
   height: 26px !important;
   min-width: 26px !important;
@@ -327,8 +318,7 @@ img.club-logo {
   max-height: 26px !important;
   object-fit: contain !important;
   flex: 0 0 26px !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  padding: 0;
 }
 
 .vs {
@@ -345,7 +335,6 @@ img.club-logo {
   font-size: .86rem;
 }
 
-/* Countdown */
 #matchCountdown {
   margin-top: 18px;
   padding: 16px;
@@ -368,7 +357,7 @@ img.club-logo {
   font-weight: 800;
 }
 
-/* Letzte Ergebnisse */
+/* Ergebnisse */
 .results {
   display: grid;
   gap: 10px;
@@ -393,22 +382,6 @@ img.club-logo {
   color: #bbb;
 }
 
-/* Verbindungsstatus */
-.connection {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ccc;
-  margin: 15px 0;
-}
-
-.connection i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #62c477;
-}
-
 /* Buttons */
 button,
 .contact-button {
@@ -428,7 +401,7 @@ button:hover,
   filter: brightness(.94);
 }
 
-/* Kontakt */
+/* Kontaktbereich */
 .contact {
   margin-top: 22px;
 }
@@ -473,7 +446,12 @@ footer a {
   margin-left: 8px;
 }
 
-/* Mobile Ansicht */
+/* Fehlermeldung beim Laden der Daten */
+#tableStatus.error {
+  color: #ff8d8d;
+}
+
+/* Handy und kleine Bildschirme */
 @media (max-width: 700px) {
   .grid {
     grid-template-columns: 1fr;
@@ -501,14 +479,5 @@ footer a {
 
   .standings-table {
     min-width: 690px;
-  }
-
-  .team-mark {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    min-height: 40px;
-    max-height: 40px;
   }
 }
