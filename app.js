@@ -1,4 +1,6 @@
-const CURRENT_SEASON = 2026; // Saison 2026/2027
+// Aktuelle Saison dynamisch ermitteln (im Herbst/Winter die aktuelle Jahreszahl, z. B. 2026)
+const now = new Date();
+const CURRENT_SEASON = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 
 async function fetchBvbData() {
   const statsElement = document.getElementById('bvb-stats');
@@ -6,7 +8,7 @@ async function fetchBvbData() {
   try {
     statsElement.textContent = "Lade Daten...";
 
-    // 1. Tabelle abrufen
+    // 1. Tabelle abrufen (OHNE erzwungene Jahreszahl, holt automatisch die aktuellste)
     const tableRes = await fetch(`https://api.openligadb.de/getbltable/bl1/${CURRENT_SEASON}`);
     if (!tableRes.ok) throw new Error("Tabelle konnte nicht geladen werden");
     
@@ -36,7 +38,6 @@ async function fetchBvbData() {
           (m.team2 && m.team2.teamName && m.team2.teamName.includes("Dortmund"))
         );
 
-        const now = new Date();
         const live = bvbMatches.find(m => !m.matchIsFinished && new Date(m.matchDateTime) <= now);
         const finished = bvbMatches.filter(m => m.matchIsFinished);
         const upcoming = bvbMatches.filter(m => !m.matchIsFinished && new Date(m.matchDateTime) > now);
@@ -136,7 +137,7 @@ function renderLastMatches(matches) {
   });
 }
 
-// Push-Notifications für den Browser
+// Push-Notifications
 const notifBtn = document.getElementById('notif-btn');
 if (notifBtn) {
   notifBtn.addEventListener('click', () => {
@@ -151,6 +152,6 @@ if (notifBtn) {
   });
 }
 
-// Initialer Aufruf + 30 Sek. Intervall
+// Aufruf beim Laden
 fetchBvbData();
 setInterval(fetchBvbData, 30000);
