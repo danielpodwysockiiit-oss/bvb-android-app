@@ -1,4 +1,4 @@
-const CURRENT_SEASON = 2025; // Saison 2025/2026
+const CURRENT_SEASON = 2026; // Saison 2026/2027
 
 async function fetchBvbData() {
   const statsElement = document.getElementById('bvb-stats');
